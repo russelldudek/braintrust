@@ -1,0 +1,22 @@
+:root {
+  /* source-sampled from Braintrust identity board by Mast */
+  --brand-navy: #0F0F31;
+  --brand-blue: #357BFF;
+  /* official current logo / site neutrals */
+  --brand-ink: #121217;
+  --brand-white: #FFFFFF;
+  --brand-mist: #F4F6FA;
+  --brand-line: #D9DEEA;
+  /* candidate-original semantic accents for evaluation states */
+  --campaign-coral: #F06F4F;
+  --campaign-green: #1E8E68;
+  --campaign-amber: #B87500;
+  --campaign-violet: #7868E6;
+  --font-display: "Nimbus Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Nimbus Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "DejaVu Sans Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --shadow-soft: 0 18px 48px rgba(15, 15, 49, .12);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+}
