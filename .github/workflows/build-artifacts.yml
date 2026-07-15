@@ -1,0 +1,90 @@
+name: Build candidate document PDFs
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: braintrust-document-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PDF dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-urw-base35 fonts-dejavu-core poppler-utils
+          python -m pip install --upgrade pip
+          python -m pip install weasyprint pypdf
+      - name: Generate PDFs with embedded Braintrust identity
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from weasyprint import HTML
+          from pypdf import PdfReader, PdfWriter
+
+          root = Path.cwd()
+          out = root / 'docs'
+          out.mkdir(exist_ok=True)
+          jobs = {
+              'resume.html': ('Russell-Dudek-Braintrust-Resume.pdf', 2),
+              'cover-letter.html': ('Russell-Dudek-Braintrust-Cover-Letter.pdf', 1),
+              'interview-brief.html': ('Russell-Dudek-Braintrust-Interview-Brief.pdf', 3),
+              '90-day-plan.html': ('Russell-Dudek-Braintrust-90-Day-Plan.pdf', 2),
+              'evaluation-design-contract.html': ('Russell-Dudek-Braintrust-Evaluation-Design-Contract.pdf', 2),
+              'objection-analysis.html': ('Russell-Dudek-Braintrust-Objection-Analysis.pdf', 2),
+          }
+
+          for html_name, (pdf_name, expected_pages) in jobs.items():
+              path = out / pdf_name
+              HTML(filename=str(root / html_name), base_url=str(root)).write_pdf(str(path))
+              reader = PdfReader(path)
+              if len(reader.pages) != expected_pages:
+                  raise SystemExit(f'{pdf_name}: expected {expected_pages} pages, got {len(reader.pages)}')
+              writer = PdfWriter()
+              for page in reader.pages:
+                  writer.add_page(page)
+              writer.add_metadata({
+                  '/Title': pdf_name.removesuffix('.pdf').replace('-', ' '),
+                  '/Author': 'Russell Dudek',
+                  '/Subject': 'Braintrust Principal AI Data & Evaluation Strategist candidate materials',
+                  '/Creator': 'Russell Dudek candidate campaign',
+                  '/Producer': 'WeasyPrint PDF renderer',
+              })
+              temp = path.with_suffix('.tmp.pdf')
+              with temp.open('wb') as handle:
+                  writer.write(handle)
+              temp.replace(path)
+              print(f'{pdf_name}: {expected_pages} pages')
+          PY
+      - name: Verify embedded logo images
+        run: |
+          for pdf in docs/*.pdf; do
+            echo "Checking $pdf"
+            pdfimages -list "$pdf" | grep -q '1200[[:space:]]\+300' || {
+              echo "Expected embedded Braintrust logo image missing from $pdf"
+              exit 1
+            }
+          done
+      - name: Commit regenerated downloads
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/
+          if git diff --cached --quiet; then
+            echo 'PDF downloads already match the corrected source.'
+          else
+            git commit -m 'Regenerate candidate PDFs with embedded Braintrust logo'
+            git push
+          fi
