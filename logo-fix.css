@@ -1,0 +1,10 @@
+/* Screen-only recovery for the committed Braintrust wordmark asset.
+   The local PNG remains the print/PDF source; browser surfaces use the
+   verified official Braintrust-hosted wordmark until the Pages binary
+   delivery defect is fully resolved. */
+@media screen {
+  img[src$="assets/brand/braintrust-logo.png"],
+  img[src$="braintrust-logo.png"] {
+    content: url("https://www.usebraintrust.com/braintrust-logo.png");
+  }
+}
